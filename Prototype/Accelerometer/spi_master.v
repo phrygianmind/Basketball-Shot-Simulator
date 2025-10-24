@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 // spi_master - ADXL362 X-only reader
+// Author(s): Benjamin T, Toby P, Kevin L
 // - Power-up wait
 // - WRITE: 0x0A, addr 0x2D (POWER_CTL), data 0x02 (Measurement)
 // - Loop:  READ: 0x0B from 0x0E (X_L), capture X_L, X_H (2 bytes)
