@@ -5,7 +5,7 @@
 // 
 // Create Date: 10/23/2025 04:41:05 PM
 // Design Name: 
-// Module Name: sevenseg_mux
+// Module Name: bcd_counter
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -46,3 +46,4 @@ module bcd_downcounter #(
     end
   end
 endmodule
+
