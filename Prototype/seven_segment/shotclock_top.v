@@ -5,7 +5,7 @@
 // 
 // Create Date: 10/23/2025 04:41:05 PM
 // Design Name: 
-// Module Name: sevenseg_mux
+// Module Name: shotclock_top
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -60,5 +60,6 @@ module shotclock_top(
     .dp3(dp3), .dp2(dp2), .dp1(dp1), .dp0(dp0),
     .an(an), .seg(seg), .dp(dp)
   );
+
 
 endmodule
