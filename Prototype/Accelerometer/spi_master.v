@@ -157,3 +157,4 @@ module spi_master(
       default: state <= ST_PWRUP;
     endcase
   end
+endmodule
