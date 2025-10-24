@@ -5,7 +5,7 @@
 // 
 // Create Date: 10/23/2025 04:41:05 PM
 // Design Name: 
-// Module Name: sevenseg_mux
+// Module Name: debounce
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -28,3 +28,4 @@ module debounce(
   // TODO: implement sync + counter + edge detect.
   assign pulse = btn_in; // placeholder
 endmodule
+
