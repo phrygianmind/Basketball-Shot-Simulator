@@ -23,7 +23,7 @@
 module VGA(
         input CLK100MHZ, 
         input wire [2:0] SW,
-        input  wire reset,             // optional, can connect to a button
+        input wire reset,             // optional can connect to a button
         output wire [2:0] rgb,
         output wire VGA_HS,
         output wire VGA_VS
@@ -36,23 +36,22 @@ module VGA(
     
     clockDivider clock25MhzGen (.CLK100MHZ(CLK100MHZ), .CLK25MHZ(CLK25MHZ));
     
-//    vga_sync vga_syncCkt (.clk(CLK25MHZ) , .reset(), 
-//                          .hsync(hsync), .vsync(vsync), 
-//                          .video_on(video_on), .p_tick(p_tick), 
-//                          .pixel_x(pixel_x), .pixel_y(pixel_y)
-//    );
+    vga_sync vga_syncCkt (.clk(CLK25MHZ) , .reset(1'b0), 
+                          .hsync(VGA_HS), .vsync(VGA_VS), 
+                          .video_on(video_on), .p_tick(p_tick), 
+                          .pixel_x(pixel_x), .pixel_y(pixel_y)
+    );
     
     
     //Do VGA test module here.
     // Instantiate VGA test module
     vga_test vga_test_unit (
         .clk(CLK25MHZ),   // 25 MHz pixel clock
-        .reset(reset),
+        .reset(1'b0),
         .sw(SW),          // 3-bit switch input
-        .hsync(VGA_HS),   // to VGA horizontal sync pin
-        .vsync(VGA_VS),   // to VGA vertical sync pin
         .rgb(rgb)         // 3-bit RGB output
     );
+    
     
     
     
