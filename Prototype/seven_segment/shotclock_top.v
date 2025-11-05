@@ -21,45 +21,55 @@
 
 
 module shotclock_top(
-  input  wire clk_100MHz,
-  input  wire btn_start,
-  input  wire btn_reset,
-  output wire [3:0] an,
-  output wire [6:0] seg,
-  output wire dp
+  input  wire CLK100MHZ,   // 100 MHz system clock
+  input  wire BTNC,        // start/load countdown
+  input  wire BTNR,        // reset button
+  output wire [3:0] an,    // anode controls
+  output wire [6:0] seg,   // segment outputs
+  output wire dp           // decimal point
 );
-  // TODO: hook real debouncers; for now, pass raw buttons
-  wire start_pulse = btn_start;  // placeholder
-  wire reset_sync  = btn_reset;  // placeholder
 
-  // TODO: real clock divider; stub outputs held low
-  wire tick_1hz;   // countdown tick (stub)
-  wire scan_en;    // 7-seg scan enable (stub)
-  clock_divider u_div(
-    .clk(clk_100MHz),
-    .rst(reset_sync),
+  wire start_pulse, reset_pulse;
+  debounce db_start(.clk(CLK100MHZ), .btn(BTNC), .pulse(start_pulse));
+  debounce db_reset(.clk(CLK100MHZ), .btn(BTNR), .pulse(reset_pulse));
+
+  wire rst = reset_pulse;
+  wire tick_1hz, scan_en;
+
+  clock_divider div(
+    .clk(CLK100MHZ),
+    .rst(rst),
     .tick_1hz(tick_1hz),
     .scan_en(scan_en)
   );
 
-  // Shot clock digits (seconds only: S1 S0). Start at 24 by convention.
-  // TODO: implement downcounter; for now just hardcode 2 and 4 to show wiring.
-  wire [3:0] d3 = 4'hF; // blank
-  wire [3:0] d2 = 4'hF; // blank
-  wire [3:0] d1 = 4'd2; // tens
-  wire [3:0] d0 = 4'd4; // ones
+  wire [3:0] s1, s0;
+  wire zero;
 
-  // TODO: blink DP when running; for now keep off
-  wire dp3 = 1'b1, dp2 = 1'b1, dp1 = 1'b1, dp0 = 1'b1;
-
-  sevenseg_mux u_mux(
-    .clk(clk_100MHz),
-    .rst(reset_sync),
-    .scan_en(scan_en),
-    .d3(d3), .d2(d2), .d1(d1), .d0(d0),
-    .dp3(dp3), .dp2(dp2), .dp1(dp1), .dp0(dp0),
-    .an(an), .seg(seg), .dp(dp)
+  bcd_counter counter(
+    .clk(CLK100MHZ),
+    .rst(rst),
+    .load(start_pulse),
+    .tick_1hz(tick_1hz),
+    .s1(s1),
+    .s0(s0),
+    .zero(zero)
   );
 
-
+  sevenseg_mux display(
+    .clk(CLK100MHZ),
+    .rst(rst),
+    .scan_en(scan_en),
+    .d3(4'hF),
+    .d2(4'hF),
+    .d1(s1),
+    .d0(s0),
+    .dp3(1'b1),
+    .dp2(1'b1),
+    .dp1(1'b1),
+    .dp0(1'b1),
+    .an(an),
+    .seg(seg),
+    .dp(dp)
+  );
 endmodule

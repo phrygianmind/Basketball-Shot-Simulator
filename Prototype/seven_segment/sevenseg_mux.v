@@ -23,23 +23,17 @@
 module sevenseg_mux(
   input  wire clk,
   input  wire rst,
-  input  wire scan_en,
-  input  wire [3:0] d3, d2, d1, d0,
-  input  wire dp3, dp2, dp1, dp0,
-  output reg  [3:0] an,
-  output reg  [6:0] seg,
-  output reg  dp
+  input  wire scan_en,              // ~4 kHz scan pulse
+  input  wire [3:0] d3, d2, d1, d0, // digit data
+  input  wire dp3, dp2, dp1, dp0,   // decimal points
+  output reg  [3:0] an,             // digit enables (active-low)
+  output wire [6:0] seg,            // segment lines (active-low)
+  output reg  dp                    // decimal point (active-low)
 );
-  reg [1:0] sel;
+
+  reg [1:0] sel = 0;
   reg [3:0] nib;
 
-  // TODO: drive sel on scan_en; for now, freeze at digit 0
-  always @(posedge clk) begin
-    if (rst) sel <= 2'd0;
-    else if (scan_en) sel <= sel + 2'd1; // will never tick until divider real
-  end
-
-  // Simple hex-to-7seg for 0-9 only (common anode patterns)
   function [6:0] enc;
     input [3:0] v;
     begin
@@ -54,15 +48,30 @@ module sevenseg_mux(
         4'd7: enc = 7'b1111000;
         4'd8: enc = 7'b0000000;
         4'd9: enc = 7'b0010000;
-        default: enc = 7'b1111111; // blank
+        default: enc = 7'b1111111;
       endcase
     end
   endfunction
 
-  // One active digit at a time; placeholder chooses d0
+  assign seg = enc(nib);
+
+  always @(posedge clk) begin
+    if (rst)
+      sel <= 0;
+    else if (scan_en)
+      sel <= sel + 1;
+  end
+
   always @* begin
-    an  = 4'b1110;     // enable digit0 only (active low on Nexys A7)
-    seg = enc(d0);     // show ones digit
-    dp  = 1'b1;        // decimal point off (common anode)
+    an = 4'b1111;
+    dp = 1'b1;
+    nib = 4'hF;
+
+    case (sel)
+      2'd0: begin an = 4'b1110; nib = d0; dp = ~dp0; end
+      2'd1: begin an = 4'b1101; nib = d1; dp = ~dp1; end
+      2'd2: begin an = 4'b1011; nib = d2; dp = ~dp2; end
+      2'd3: begin an = 4'b0111; nib = d3; dp = ~dp3; end
+    endcase
   end
 endmodule

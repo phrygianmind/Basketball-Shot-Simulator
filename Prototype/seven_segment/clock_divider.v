@@ -26,15 +26,41 @@ module clock_divider(
   output reg  tick_1hz,
   output reg  scan_en
 );
-  // TODO: implement real counters. For now, keep low.
+
+  // Constants for 100 MHz clock
+  localparam integer TICK_MAX = 100_000_000 - 1;   // 1 Hz
+  localparam integer SCAN_MAX = 25_000 - 1;        // 4 kHz
+
+  reg [31:0] tick_cnt = 0;
+  reg [15:0] scan_cnt = 0;
+
   always @(posedge clk) begin
     if (rst) begin
-      tick_1hz <= 1'b0;
-      scan_en  <= 1'b0;
+      tick_cnt <= 0;
+      tick_1hz <= 0;
     end else begin
-      tick_1hz <= 1'b0; // placeholder pulse
-      scan_en  <= 1'b0; // placeholder pulse
+      tick_1hz <= 0;
+      if (tick_cnt == TICK_MAX) begin
+        tick_cnt <= 0;
+        tick_1hz <= 1;
+      end else begin
+        tick_cnt <= tick_cnt + 1;
+      end
+    end
+  end
+
+  always @(posedge clk) begin
+    if (rst) begin
+      scan_cnt <= 0;
+      scan_en <= 0;
+    end else begin
+      scan_en <= 0;
+      if (scan_cnt == SCAN_MAX) begin
+        scan_cnt <= 0;
+        scan_en <= 1;
+      end else begin
+        scan_cnt <= scan_cnt + 1;
+      end
     end
   end
 endmodule
-

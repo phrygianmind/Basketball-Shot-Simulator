@@ -20,30 +20,31 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module bcd_downcounter #(
-  parameter START_SS = 24
-)(
+module bcd_counter(
   input  wire clk,
   input  wire rst,
-  input  wire load,   // load START_SS
-  input  wire tick,   // 1 Hz
-  input  wire hold,   // stop
-  output reg  [3:0] s1, // tens
-  output reg  [3:0] s0, // ones
-  output wire zero
+  input  wire load,        // reload to 10
+  input  wire tick_1hz,    // 1 Hz pulse
+  output reg  [3:0] s1,    // tens
+  output reg  [3:0] s0,    // ones
+  output wire zero         // high when counter reaches 00
 );
-  assign zero = (s1 == 0 && s0 == 0);
 
-  // TODO: on reset/load, set s1/s0 to START_SS; on tick, decrement BCD.
+  assign zero = (s1 == 4'd0 && s0 == 4'd0);
+
   always @(posedge clk) begin
     if (rst || load) begin
-      s1 <= START_SS/10;
-      s0 <= START_SS%10;
-    end else if (tick && !hold && !zero) begin
-      // TODO: implement BCD borrow logic
-      s1 <= s1;
-      s0 <= s0;
+      s1 <= 1;  // tens place of 10
+      s0 <= 0;  // ones place of 10
+    end 
+    else if (tick_1hz && !zero) begin
+      if (s0 == 0) begin
+        s0 <= 9;
+        if (s1 != 0) s1 <= s1 - 1;
+      end 
+      else begin
+        s0 <= s0 - 1;
+      end
     end
   end
 endmodule
-
