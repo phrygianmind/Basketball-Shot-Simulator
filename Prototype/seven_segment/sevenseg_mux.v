@@ -51,9 +51,9 @@ module sevenseg_mux(
         default: enc = 7'b1111111;
       endcase
     end
-  endfunction
+  endfunction 
 
-  assign seg = enc(nib);
+  assign seg = ~enc(nib);
 
   always @(posedge clk) begin
     if (rst)
@@ -63,15 +63,15 @@ module sevenseg_mux(
   end
 
   always @* begin
-    an = 4'b1111;
     dp = 1'b1;
     nib = 4'hF;
+    an = 4'b1111;
 
     case (sel)
-      2'd0: begin an = 4'b1110; nib = d0; dp = ~dp0; end
-      2'd1: begin an = 4'b1101; nib = d1; dp = ~dp1; end
-      2'd2: begin an = 4'b1011; nib = d2; dp = ~dp2; end
-      2'd3: begin an = 4'b0111; nib = d3; dp = ~dp3; end
+      2'd0: begin an = 4'b1110; nib = d0; end // ones digit
+      2'd1: begin an = 4'b1101; nib = d1; end // tens digit
+      default: an = 4'b1111; // others OFF
     endcase
   end
+
 endmodule
