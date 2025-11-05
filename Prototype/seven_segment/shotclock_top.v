@@ -77,5 +77,5 @@ module shotclock_top(
 
   assign dp  = 1'b1;         // decimal point OFF (active-low)
   assign an  = 4'b1110;      // enable only the right-most digit (active-low)
-  assign seg = 7'b1000000;   // should display a “0” pattern
+  assign seg = 7'b0000001;   // active-low pattern for "0" with seg[6:0]=a..g
 endmodule
