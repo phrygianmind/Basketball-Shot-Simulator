@@ -56,6 +56,7 @@ module shotclock_top(
     .zero(zero)
   );
 
+  /*
   sevenseg_mux display(
     .clk(CLK100MHZ),
     .rst(rst),
@@ -72,4 +73,9 @@ module shotclock_top(
     .seg(seg),
     .dp(dp)
   );
+  */
+
+  assign dp  = 1'b1;         // decimal point OFF (active-low)
+  assign an  = 4'b1110;      // enable only the right-most digit (active-low)
+  assign seg = 7'b1000000;   // should display a “0” pattern
 endmodule

@@ -38,22 +38,22 @@ module sevenseg_mux(
     input [3:0] v;
     begin
       case (v)
-        4'd0: enc = 7'b1000000;
-        4'd1: enc = 7'b1111001;
-        4'd2: enc = 7'b0100100;
-        4'd3: enc = 7'b0110000;
-        4'd4: enc = 7'b0011001;
-        4'd5: enc = 7'b0010010;
-        4'd6: enc = 7'b0000010;
-        4'd7: enc = 7'b1111000;
-        4'd8: enc = 7'b0000000;
-        4'd9: enc = 7'b0010000;
-        default: enc = 7'b1111111;
+        4'd0: enc = 7'b1000000; // A B C D E F on, G off
+        4'd1: enc = 7'b1111001; // B C on
+        4'd2: enc = 7'b0100100; // A B D E G on
+        4'd3: enc = 7'b0110000; // A B C D G on
+        4'd4: enc = 7'b0011001; // B C F G on
+        4'd5: enc = 7'b0010010; // A C D F G on
+        4'd6: enc = 7'b0000010; // A C D E F G on
+        4'd7: enc = 7'b1111000; // A B C on
+        4'd8: enc = 7'b0000000; // all on
+        4'd9: enc = 7'b0010000; // A B C D F G on
+        default: enc = 7'b1111111; // blank
       endcase
     end
   endfunction 
 
-  assign seg = ~enc(nib);
+assign seg = enc(nib);
 
   always @(posedge clk) begin
     if (rst)
