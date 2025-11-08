@@ -29,14 +29,14 @@ module vga_sync(
      
     //Define Constants
     // VGA 640-by-480 sync parameters
-    localparam HD = 640; // horizontal display area
-    localparam HF = 48 ; // h. front (left) border
-    localparam HB = 16 ; // h. back (right) border
-    localparam HR = 96 ; // h. retrace
-    localparam VD = 480; // vertical display area
-    localparam VF = 10; // v. front (top) border
-    localparam VB = 33; // v. back (bottom) border
-    localparam VR = 2; // v. retrace 
+    localparam HD = 640;    // horizontal display area
+    localparam HF = 48 ;    // h. front (left) border
+    localparam HB = 16 ;    // h. back (right) border
+    localparam HR = 96 ;    // h. retrace
+    localparam VD = 480;    // vertical display area
+    localparam VF = 10;     // v. front (top) border
+    localparam VB = 33;     // v. back (bottom) border
+    localparam VR = 2;      // v. retrace 
     
     // mod - 4 counter 
     // reg [1:0] mod4_reg;
@@ -44,10 +44,10 @@ module vga_sync(
     
     
     // sync counters
-    reg [9:0] h_count_reg, h_count_next;
-    reg [9:0] v_count_reg , v_count_next;
+    reg [9:0] h_count_reg = 0 , h_count_next;
+    reg [9:0] v_count_reg = 0, v_count_next;
     // output buffer
-    reg v_sync_reg , h_sync_reg ;
+    reg v_sync_reg = 1'b0, h_sync_reg = 1'b0;
     wire v_sync_next , h_sync_next ;
     // status signal
     wire h_end , v_end , pixel_tick;
