@@ -43,7 +43,7 @@ module clockDivider(
     
     always @(posedge CLK100MHZ) 
     begin
-        if (counter == 2'b01)  // Your original logic - THIS IS CORRECT
+        if (counter == 2'b01)  
         begin
             CLK25MHZ <= ~CLK25MHZ;
             counter <= 2'b00;

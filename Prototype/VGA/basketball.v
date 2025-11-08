@@ -76,7 +76,7 @@ module basketball(
     // Map current pixel to ROM address (relative to ball top-left)
     assign rom_addr = pixel_y[2:0] - ball_y_t[2:0];
     assign rom_col = pixel_x[2:0] - ball_x_l[2:0];
-    assign rom_bit = rom_data[rom_col];  // Use correct bit ordering
+    assign rom_bit = rom_data[7 - rom_col];  // Use correct bit ordering
     
     // Final ball pixel (within region AND ROM bit is set)
     wire basketball_on;

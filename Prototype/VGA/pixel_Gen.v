@@ -36,7 +36,6 @@ module pixel_Gen(
     basketballHoop object1 (.video_on(video_on), .pixel_x(pixel_x), .pixel_y(pixel_y), 
                                      .object_rgb(obj1_rgb), .object_on(obj1_on));
     
-    //In progress - Need to get (x,y) ball 
     wire [11:0] obj2_rgb;
     wire obj2_on;
     basketball object2 (.video_on(video_on), .pixel_x(pixel_x), .pixel_y(pixel_y), 
@@ -44,7 +43,6 @@ module pixel_Gen(
                         .object_rgb(obj2_rgb), .object_on(obj2_on));
 
 
-    //Use rgb mux to determine what rgb output should a pixel be
     wire [11:0] rgb_wire;
     rgb_Mux rgb_MuxCkt (.obj1_rgb(obj1_rgb), .obj1_on(obj1_on), .obj2_rgb(obj2_rgb), .obj2_on(obj2_on), .rgb(rgb_wire));
     

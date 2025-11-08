@@ -51,11 +51,9 @@ module VGA(
     
     
     //rgb buffer. Use registers instead of wires to store
-    always @(posedge CLK25MHZ or posedge reset)
+    always @(posedge CLK25MHZ)
     begin
-        if (reset)
-            rgb_reg <= 12'h000;
-        else if (p_tick)
+        if (p_tick)
             rgb_reg <= rgb_next;
     end
     
