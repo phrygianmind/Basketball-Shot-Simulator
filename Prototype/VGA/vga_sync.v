@@ -41,6 +41,7 @@ module vga_sync(
     reg v_sync_reg = 1'b0, h_sync_reg = 1'b0;
     
     wire h_end, v_end;
+    wire pixel_tick;
     assign pixel_tick = 1'b1;  
 
     

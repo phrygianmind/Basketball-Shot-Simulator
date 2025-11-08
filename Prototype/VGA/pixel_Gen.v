@@ -21,11 +21,11 @@
 
 
 module pixel_Gen(
+    input wire clk,           // AddED clock input
     input wire [9:0] pixel_x, pixel_y,
     input wire video_on,
     input wire [9:0] ball_x, ball_y,
-    output wire [11:0] rgb_out
-
+    output reg [11:0] rgb_out // Change to reg output
     );
     
     //Delcare wires
@@ -45,8 +45,14 @@ module pixel_Gen(
 
 
     //Use rgb mux to determine what rgb output should a pixel be
-    rgb_Mux rgb_MuxCkt (.obj1_rgb(obj1_rgb), .obj1_on(obj1_on), .obj2_rgb(obj2_rgb), .obj2_on(obj2_on), .rgb(rgb_out));
+    wire [11:0] rgb_wire;
+    rgb_Mux rgb_MuxCkt (.obj1_rgb(obj1_rgb), .obj1_on(obj1_on), .obj2_rgb(obj2_rgb), .obj2_on(obj2_on), .rgb(rgb_wire));
     
+    // Registered output
+    always @(posedge clk) 
+    begin
+        rgb_out <= rgb_wire;
+    end
     
 endmodule
 
