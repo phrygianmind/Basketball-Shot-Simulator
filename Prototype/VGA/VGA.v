@@ -44,7 +44,9 @@ module VGA(
                           .pixel_x(pixel_x), .pixel_y(pixel_y)
     );
     
-    pixel_Gen pixel_genCkt (.pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next));
+    //ball_x and ball_y are coordinates supposed to be inputted
+    pixel_Gen pixel_genCkt (.pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next),
+                            .ball_x(10), .ball_y(300));
     
     
     //rgb buffer. Use registers instead of wires to store
