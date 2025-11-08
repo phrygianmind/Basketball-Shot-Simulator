@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 // seg7_xraw - display signed 12-bit X value on 4 leftmost digits.
 // Author(s): Benjamin T, Toby P, Kevin L
-// for debugging accelerometer only, not to be implemented in project
+// for debugging accelerometer only, not to be implemented in final product
 // DP acts as a minus indicator on the ones digit.
 
 module seg7_xraw(
