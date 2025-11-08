@@ -37,7 +37,7 @@ module VGA(
     
     wire reset = 1'b0;
     
-    clockDivider clock25MhzGen (.CLK100MHZ(CLK100MHZ), .reset(reset), .CLK25MHZ(CLK25MHZ));
+    clockDivider clock25MhzGen (.CLK100MHZ(CLK100MHZ), .CLK25MHZ(CLK25MHZ));
     
     vga_sync vga_syncCkt (.clk(CLK25MHZ) , .reset(reset), 
                           .hsync(hsync), .vsync(vsync), 
