@@ -29,9 +29,7 @@ module pixel_Gen(
     );
     
     //Delcare wires
-    wire [9:0] ball_x_in, ball_y_in;
-    assign ball_x_in = ball_x;
-    assign ball_y_in = ball_y;
+    
     //Declare objects
     wire [11:0] obj1_rgb;
     wire obj1_on;
@@ -42,7 +40,7 @@ module pixel_Gen(
     wire [11:0] obj2_rgb;
     wire obj2_on;
     basketball object2 (.video_on(video_on), .pixel_x(pixel_x), .pixel_y(pixel_y), 
-                        .ball_x(ball_x_in), .ball_y(ball_y_in),
+                        .ball_x(ball_x), .ball_y(ball_y),
                         .object_rgb(obj2_rgb), .object_on(obj2_on));
 
 

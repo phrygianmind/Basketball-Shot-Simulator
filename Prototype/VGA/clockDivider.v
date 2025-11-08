@@ -22,6 +22,7 @@
 
 module clockDivider(
     input CLK100MHZ, 
+    input reset,
     output reg CLK25MHZ = 0  // Initialize to 0
 );
 
@@ -40,20 +41,24 @@ module clockDivider(
     
     */
     
-    always @(posedge CLK100MHZ) 
+    always @(posedge CLK100MHZ or posedge reset) 
     begin
-        if (counter == 2'b01)  // When counter reaches 1 (after 2 clock cycles)
-        begin
-            CLK25MHZ <= ~CLK25MHZ;  // Toggle output
-            counter <= 2'b00;       // Reset counter
+        if (reset) begin
+            counter <= 2'b00;
+            CLK25MHZ <= 1'b0;
         end
-        else
-        begin
-            counter <= counter + 1; // Increment counter
+        else if (counter == 2'b11) begin
+            CLK25MHZ <= ~CLK25MHZ;
+            counter <= 2'b00;
+        end
+        else begin
+            counter <= counter + 1;
         end
     end
 
 endmodule
+
+
 
 
    

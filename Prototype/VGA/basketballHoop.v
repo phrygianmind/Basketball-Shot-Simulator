@@ -22,7 +22,7 @@
 
 module basketballHoop(
         input video_on,
-        input wire pixel_x, pixel_y,
+        input wire [9:0] pixel_x, pixel_y,
         output wire [11:0] object_rgb,
         output wire object_on
     );
@@ -76,7 +76,7 @@ module basketballHoop(
     //Black
     localparam [11:0] BLACK = 12'h000;
     //Red
-    localparam [12:0] RED = 12'hF00;
+    localparam [11:0] RED = 12'hF00;
     
     // {VGA_R, VGA_G, VGA_B} Each VGA_X = 4 bits
     assign object_rgb = (~video_on) ? BLACK :
