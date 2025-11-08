@@ -3,7 +3,7 @@
 // Author(s): Benjamin T, Toby P, Kevin L
 // turns 100MHz system clock into 4MHz clock for SPI logic; higher clock speeds are less consistent/readable
 
-module iclk_gen (
+module iclk_genr (
     input  wire CLK100MHZ,        // 100MHz system clock
     output wire clk_4MHz          // 4 MHz clock
 );
