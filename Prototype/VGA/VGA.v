@@ -22,36 +22,45 @@
 
 module VGA(
         input CLK100MHZ, 
-        input wire [2:0] SW,
-        input wire reset,             // optional can connect to a button
-        output wire [2:0] rgb,
+        //input wire reset,             // optional can connect to a button
+        output wire [11:0] rgb,
         output wire VGA_HS,
         output wire VGA_VS
     );
     
-    //Declare wires
+    //Declare essential wires/registers
     wire CLK25MHZ;
     wire hsync, vsync, video_on, p_tick;
     wire [9:0] pixel_x, pixel_y;
+    wire [11:0] rgb_next; 
+    reg [11:0] rgb_reg;
+    
+    wire reset = 1'b0;
     
     clockDivider clock25MhzGen (.CLK100MHZ(CLK100MHZ), .CLK25MHZ(CLK25MHZ));
     
-    vga_sync vga_syncCkt (.clk(CLK25MHZ) , .reset(1'b0), 
-                          .hsync(VGA_HS), .vsync(VGA_VS), 
+    vga_sync vga_syncCkt (.clk(CLK25MHZ) , .reset(reset), 
+                          .hsync(hsync), .vsync(vsync), 
                           .video_on(video_on), .p_tick(p_tick), 
                           .pixel_x(pixel_x), .pixel_y(pixel_y)
     );
     
+    //ball_x and ball_y are coordinates supposed to be inputted
+    pixel_Gen pixel_genCkt (.clk(CLK25MHZ), .pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next),
+                            .ball_x(10), .ball_y(300));
     
-    //Do VGA test module here.
-    // Instantiate VGA test module
-    vga_test vga_test_unit (
-        .clk(CLK25MHZ),   // 25 MHz pixel clock
-        .reset(1'b0),
-        .sw(SW),          // 3-bit switch input
-        .rgb(rgb)         // 3-bit RGB output
-    );
     
+    //rgb buffer. Use registers instead of wires to store
+    always @(posedge CLK25MHZ)
+    begin
+        if (p_tick)
+            rgb_reg <= rgb_next;
+    end
+    
+    // Assign outputs
+    assign rgb = rgb_reg;
+    assign VGA_HS = hsync;
+    assign VGA_VS = vsync;
     
     
     
