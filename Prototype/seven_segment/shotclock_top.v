@@ -25,8 +25,7 @@ module shotclock_top(
   input  wire BTNC,        // start/load countdown
   input  wire BTNR,        // reset button
   output wire [3:0] an,    // anode controls
-  output wire [6:0] seg,   // segment outputs
-  output wire dp           // decimal point
+  output wire [6:0] seg    // segment outputs
 );
 
   wire start_pulse, reset_pulse;
@@ -64,12 +63,7 @@ module shotclock_top(
     .d2(4'hF),
     .d1(s1),
     .d0(s0),
-    .dp3(1'b1),
-    .dp2(1'b1),
-    .dp1(1'b1),
-    .dp0(1'b1),
     .an(an),
-    .seg(seg),
-    .dp(dp)
+    .seg(seg)
   );
 endmodule

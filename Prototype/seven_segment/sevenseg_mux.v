@@ -25,14 +25,14 @@ module sevenseg_mux(
   input  wire rst,
   input  wire scan_en,              // ~4 kHz scan pulse
   input  wire [3:0] d3, d2, d1, d0, // digit data
-  input  wire dp3, dp2, dp1, dp0,   // decimal points
   output reg  [3:0] an,             // digit enables (active-low)
-  output wire [6:0] seg,            // segment lines (active-low)
-  output reg  dp                    // decimal point (active-low)
+  output wire [6:0] seg             // segment lines (active-low)
 );
 
   reg [1:0] sel = 0;
   reg [3:0] nib;
+
+  // Decimal point not used; signal removed.
 
   function [6:0] enc;
     input [3:0] v;
@@ -64,7 +64,6 @@ assign seg = enc(nib);
   end
 
   always @* begin
-    dp = 1'b1;
     nib = 4'hF;
     an = 4'b1111;
 
