@@ -33,7 +33,7 @@ module VGA(
     wire hsync, vsync, video_on, p_tick;
     wire [9:0] pixel_x, pixel_y;
     wire [11:0] rgb_next; 
-    reg [11:0] rgb_reg;
+    reg [11:0] rgb_reg = 0;
     
     wire reset = 1'b0;
     
@@ -46,7 +46,7 @@ module VGA(
     );
     
     //ball_x and ball_y are coordinates supposed to be inputted
-    pixel_Gen pixel_genCkt (.clk(CLK25MHZ), .pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next),
+    pixel_Gen pixel_genCkt (.pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next),
                             .ball_x(10), .ball_y(300));
     
     

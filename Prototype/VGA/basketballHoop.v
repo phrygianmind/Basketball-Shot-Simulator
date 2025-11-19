@@ -33,20 +33,20 @@ module basketballHoop(
     // Basketball pole coordinates lvl#3
     localparam POLE_X_L = 630;
     localparam POLE_X_R = 635;
-    localparam POLE_Y_T =  50;
+    localparam POLE_Y_T = 120;
     localparam POLE_Y_B = 480;
 
     // Backboard coordinates lvl#2
     localparam BOARD_X_L = 630;
     localparam BOARD_X_R = 633;
-    localparam BOARD_Y_T =  50;
-    localparam BOARD_Y_B = 100;
+    localparam BOARD_Y_T = 110;
+    localparam BOARD_Y_B = 160;
     
     //Basketball Hoop (Higher overlay priority) lvl #1
-    localparam HOOP_X_L = 620;
+    localparam HOOP_X_L = 610;
     localparam HOOP_X_R = 630;
-    localparam HOOP_Y_T =  97;
-    localparam HOOP_Y_B = 100;
+    localparam HOOP_Y_T =  155;
+    localparam HOOP_Y_B = 159;
 
     // ==============================================================
     // Object signals

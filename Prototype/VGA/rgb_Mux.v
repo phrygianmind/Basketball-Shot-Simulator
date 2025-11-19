@@ -29,17 +29,9 @@ module rgb_Mux(
     // ==============================================================
     // RGB Multiplexing circuit (Priority: Lowest number is highest)
     // ==============================================================
-    reg [11:0] rgb_mux_reg;
-    
-    always @(*)
-        if(obj1_on)
-            rgb_mux_reg = obj1_rgb;
-        else if (obj2_on)
-            rgb_mux_reg = obj2_rgb;
-        else
-            rgb_mux_reg = 12'h000;
-    
-    assign rgb = rgb_mux_reg;
+    assign rgb = (obj1_on) ? obj1_rgb : 
+                 (obj2_on) ? obj2_rgb :
+                             12'h000  ;
     
 endmodule
 
