@@ -1,7 +1,7 @@
 // Simple button debouncer (synchronizes + waits for stability)
 // Author(s): Benjamin T
 // Adjust CNT_WIDTH for how long a press must be stable (~1-5 ms good).
-module debounce_btn #(
+module btn_sync #(
   parameter CNT_WIDTH = 18  // ~2.6 ms @ 100 MHz
 )(
   input  wire clk,
