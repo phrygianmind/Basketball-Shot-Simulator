@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 // shot_filter_xy.v - show spikes from X and Y (identical filter on both)
-// Author(s): Benjamin T, Toby P, Kevin L
-// Each axis uses an EMA baseline and outputs |axis - baseline|.
+// Author(s): Benjamin T
+// Each axis uses an EMA baseline and outputs abs(axis - baseline)
 // x and y raw positional data are filtered to show "applied force", mimics shot flick motion
 
 
