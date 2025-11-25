@@ -90,15 +90,15 @@ module top_accel(
   assign x_disp = btn_db ? x_freeze : x_flick;
   assign y_disp = btn_db ? y_freeze : y_flick;
 
-  // 7-seg shows X on left 4 digits, Y on right 4 digits
+  // 7-seg shows Y on left 4 digits, X on right 4 digits
   seg7_xy u_seg (
     .CLK100MHZ (CLK100MHZ),
-    .x_raw     (x_disp),
-    .y_raw     (y_disp),
+    .x_raw     (y_disp),   // <-- feed Y here (left side)
+    .y_raw     (x_disp),   // <-- feed X here (right side)
     .seg       (SEG),
     .dp        (DP),
     .an        (AN)
   );
-
-
+    
+    
 endmodule
