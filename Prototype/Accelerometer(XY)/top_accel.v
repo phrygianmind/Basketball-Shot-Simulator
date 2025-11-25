@@ -3,6 +3,7 @@
 // Author(s): Benjamin T
 // combines design modules for accelerometer
 // now indcludes both x and y values
+// btn_sync.v, iclk_genr.v, and constraint file still required
 
 
 module top_accel(
