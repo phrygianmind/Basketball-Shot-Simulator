@@ -35,7 +35,7 @@ module shotclock_top(
   wire rst = reset_pulse;
   wire tick_1hz, scan_en;
 
-  clock_divider div(
+  sevenseg_clock_divider div(
     .clk(CLK100MHZ),
     .rst(rst),
     .tick_1hz(tick_1hz),
