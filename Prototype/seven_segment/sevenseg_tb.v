@@ -28,7 +28,7 @@ module sevenseg_tb();
 
   // sevenseg inputs
   reg scan_en = 0;
-  reg [3:0] d3, d2, d1, d0;
+  reg [3:0] d1, d0;
 
   // outputs
   wire [3:0] an;
@@ -39,8 +39,8 @@ module sevenseg_tb();
     .clk(clk),
     .rst(rst),
     .scan_en(scan_en),
-    .d3(d3),
-    .d2(d2),
+    .d3(4'hF),  // unused digit - blank
+    .d2(4'hF),  // unused digit - blank
     .d1(d1),
     .d0(d0),
     .an(an),
@@ -58,9 +58,7 @@ module sevenseg_tb();
 
   initial begin
     // Waveform-only testbench for seven-segment display verification
-    // Initialize with blank displays (F = blank in encoder)
-    d3 = 4'hF;
-    d2 = 4'hF;
+    // Initialize with blank displays
     d1 = 4'hF;
     d0 = 4'hF;
 

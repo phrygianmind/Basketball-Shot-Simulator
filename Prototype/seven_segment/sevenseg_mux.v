@@ -29,7 +29,7 @@ module sevenseg_mux(
   output wire [6:0] seg             // segment lines (active-low)
 );
 
-  reg [1:0] sel = 0;
+  reg sel = 0;  // 1-bit toggle for 2 digits
   reg [3:0] nib;
 
   // Decimal point not used; signal removed.
@@ -60,18 +60,17 @@ assign seg = enc(nib);
     if (rst)
       sel <= 0;
     else if (scan_en)
-      sel <= sel + 1;
+      sel <= ~sel;  // toggle between 0 and 1
   end
 
   always @* begin
-    nib = 4'hF;
-    an = 4'b1111;
-
-    case (sel)
-      2'd0: begin an = 4'b1110; nib = d0; end // ones digit
-      2'd1: begin an = 4'b1101; nib = d1; end // tens digit
-      default: an = 4'b1111; // others OFF
-    endcase
+    if (sel == 0) begin
+      an = 4'b1110;  // enable digit 0 (ones)
+      nib = d0;
+    end else begin
+      an = 4'b1101;  // enable digit 1 (tens)
+      nib = d1;
+    end
   end
 
 endmodule
