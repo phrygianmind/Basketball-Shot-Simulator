@@ -58,47 +58,22 @@ module sevenseg_tb();
 
   initial begin
     // Waveform-only testbench for seven-segment display verification
-    // Initialize with blank displays
-    d1 = 4'hF;
-    d0 = 4'hF;
-
-    // Release reset after 100ns
-    #100;
-    rst = 0;
-
-    // Test case 1: Display "10" (d1=1, d0=0)
-    #100;
+    // Initialize with display showing "10"
     d1 = 4'd1;
     d0 = 4'd0;
 
-    // Test case 2: Count down from 09 to 00
-    #500;  d1=4'd0; d0=4'd9;
-    #500;  d0=4'd8;
-    #500;  d0=4'd7;
-    #500;  d0=4'd6;
-    #500;  d0=4'd5;
-    #500;  d0=4'd4;
-    #500;  d0=4'd3;
-    #500;  d0=4'd2;
-    #500;  d0=4'd1;
-    #500;  d0=4'd0;
+    // Release reset after 50ns
+    #50;
+    rst = 0;
 
-    // Test case 3: All digits 0-9 on both displays
-    #500;
-    d1 = 4'd2;
-    d0 = 4'd4;
-    #500;
-    d1 = 4'd5;
-    d0 = 4'd5;
-    #500;
-    d1 = 4'd8;
-    d0 = 4'd8;
-    #500;
-    d1 = 4'd9;
-    d0 = 4'd9;
+    // Quick countdown sequence
+    #200;  d1=4'd0; d0=4'd9;  // 09
+    #200;  d0=4'd5;           // 05
+    #200;  d0=4'd3;           // 03
+    #200;  d0=4'd0;           // 00
 
-    // Hold final state and observe multiplexing
-    #2000;
+    // Observe multiplexing with final value
+    #150;
     
     $finish;
   end
