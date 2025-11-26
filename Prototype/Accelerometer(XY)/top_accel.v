@@ -55,7 +55,7 @@ module top_accel(
     .y_valid  (y_valid)
   );
 
-  // dual-axis flick filter (your updated shot_filter)
+  // dual-axis shot flick filter 
   shot_filter_xy #(.ALPHA_SHIFT(3)) u_flick_xy (
     .clk     (w_4MHz),
     .rst     (1'b0),
@@ -91,7 +91,7 @@ module top_accel(
   assign x_disp = btn_db ? x_freeze : x_flick;
   assign y_disp = btn_db ? y_freeze : y_flick;
 
-  // 7-seg shows Y on left 4 digits, X on right 4 digits
+    // 7-seg shows Y on left segment, X on right segment (4 digits each)
   seg7_xy u_seg (
     .CLK100MHZ (CLK100MHZ),
     .x_raw     (y_disp),   // <-- feed Y here (left side)
