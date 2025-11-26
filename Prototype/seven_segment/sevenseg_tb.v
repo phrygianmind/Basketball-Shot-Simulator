@@ -57,28 +57,52 @@ module sevenseg_tb();
   end
 
   initial begin
-    // initial values
+    // Waveform-only testbench for seven-segment display verification
+    // Initialize with blank displays (F = blank in encoder)
     d3 = 4'hF;
     d2 = 4'hF;
+    d1 = 4'hF;
+    d0 = 4'hF;
+
+    // Release reset after 100ns
+    #100;
+    rst = 0;
+
+    // Test case 1: Display "10" (d1=1, d0=0)
+    #100;
     d1 = 4'd1;
     d0 = 4'd0;
 
-    // hold reset small time, then run
-    #100; rst = 0;
+    // Test case 2: Count down from 09 to 00
+    #500;  d1=4'd0; d0=4'd9;
+    #500;  d0=4'd8;
+    #500;  d0=4'd7;
+    #500;  d0=4'd6;
+    #500;  d0=4'd5;
+    #500;  d0=4'd4;
+    #500;  d0=4'd3;
+    #500;  d0=4'd2;
+    #500;  d0=4'd1;
+    #500;  d0=4'd0;
 
-    // compressed value changes (each 50 ns apart)
-    #50;   d3=4'd0; d2=4'd1; d1=4'd2; d0=4'd3;
-    #50;   d3=4'd4; d2=4'd5; d1=4'd6; d0=4'd7;
-    #50;   d3=4'd8; d2=4'd9; d1=4'hA; d0=4'hB;
-    #50;   d3=4'hC; d2=4'hD; d1=4'hE; d0=4'hF;
+    // Test case 3: All digits 0-9 on both displays
+    #500;
+    d1 = 4'd2;
+    d0 = 4'd4;
+    #500;
+    d1 = 4'd5;
+    d0 = 4'd5;
+    #500;
+    d1 = 4'd8;
+    d0 = 4'd8;
+    #500;
+    d1 = 4'd9;
+    d0 = 4'd9;
 
-    // later small adjustments to d0/d1
-    #200;  d0=4'd9; d1=4'd0;
-    #200;  d0=4'd5; d1=4'd0;
-    #200;  d0=4'd0; d1=4'd1;
-
-    // extend sim so multiple scan cycles visible
-    #5000; $finish;
+    // Hold final state and observe multiplexing
+    #2000;
+    
+    $finish;
   end
 
 endmodule
