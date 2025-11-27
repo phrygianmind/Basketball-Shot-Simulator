@@ -23,8 +23,7 @@
 module kinematic(
     input wire clk,
     input wire rst,
-    input wire released,
-    input wire pressed,
+    input wire BTN,                            //Button
     input wire [15:0] ax, ay,                   //raw_x and raw_y
     output wire [9:0] ball_x, ball_y
 
@@ -35,8 +34,50 @@ module kinematic(
     //1 LSB = 0.001 g
     //1 g   = 1000 LSB
     // So raw / LSB per g = To get no units on raw
-    
     //Button Presses: Once pressed, start getting velocity. Once released stop measuring velocity and start updating pixel
+    //Handle Button pressed
+    
+    // Button Handler
+    // Button Debouncing
+    reg [15:0] debounce_cnt = 0;
+    reg btn_sync_0 = 0, btn_sync_1 = 0;
+    reg btn_stable = 0;
+    
+    always @(posedge clk) 
+    begin
+        // Sync button to system clock
+        btn_sync_0 <= BTN;
+        btn_sync_1 <= btn_sync_0;
+    
+        // Debounce counter
+        if (btn_sync_1 == btn_stable) 
+        begin
+            debounce_cnt <= 0;
+        end 
+        else 
+        begin
+            debounce_cnt <= debounce_cnt + 1;
+            if (debounce_cnt == 16'hFFFF)
+                btn_stable <= btn_sync_1;   // Update stable value
+        end
+    end
+    
+    //Record Button presses
+    reg btn_prev = 0;
+
+    // Outputs
+    reg pressed      = 0;  // HIGH the whole time button is held
+    reg pressed_edge = 0;  // 1 clock pulse when button is first pressed
+    reg released     = 0;  // 1 clock pulse when button is released
+    
+    always @(posedge clk) 
+    begin
+        btn_prev <= btn_stable;
+    
+        pressed      <= btn_stable;
+        pressed_edge <= (btn_stable && !btn_prev);   // rising edge
+        released     <= (!btn_stable && btn_prev);   // falling edge
+    end
     
     //
     //IMPORTANT!!! - Copy and paste new to this if CHANGED LOCAL PARAMS IN VGA Module
