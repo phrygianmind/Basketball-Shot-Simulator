@@ -23,6 +23,7 @@
 module VGA(
         input CLK100MHZ, 
         //input wire reset,             // optional can connect to a button
+        input wire [9:0] ball_x, ball_y,
         output wire [11:0] rgb,
         output wire VGA_HS,
         output wire VGA_VS
@@ -47,7 +48,7 @@ module VGA(
     
     //ball_x and ball_y are coordinates supposed to be inputted
     pixel_Gen pixel_genCkt (.pixel_x(pixel_x), .pixel_y(pixel_y), .video_on(video_on), .rgb_out(rgb_next),
-                            .ball_x(10), .ball_y(300));
+                            .ball_x(ball_x), .ball_y(ball_y));
     
     
     //rgb buffer. Use registers instead of wires to store
