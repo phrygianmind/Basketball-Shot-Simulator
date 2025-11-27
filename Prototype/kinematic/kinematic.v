@@ -28,6 +28,10 @@ module kinematic(
     output wire [9:0] ball_x, ball_y
 
     );
+    
+    wire CLK25MHZ;
+    clockDivider clock25MhzGen2 (.CLK100MHZ(clk), .CLK25MHZ(CLK25MHZ));
+    
     //Goal:
     //a_x and a_y are in LSBs per g from accelerometer. Convert it to calculable process
     //FILTER CONTROL REGISTER from acel - default at 00 is +-2g. 
@@ -37,264 +41,53 @@ module kinematic(
     //Button Presses: Once pressed, start getting velocity. Once released stop measuring velocity and start updating pixel
     //Handle Button pressed
     
-    // Button Handler
-    // Button Debouncing
-    reg [15:0] debounce_cnt = 0;
-    reg btn_sync_0 = 0, btn_sync_1 = 0;
-    reg btn_stable = 0;
+    // SIMPLE BOUNCE TEST
+    reg [9:0] px = 100;
+    reg [9:0] py = 100;
+    reg dx = 1; // 1 = right, 0 = left
+    reg dy = 1; // 1 = down, 0 = up
     
-    always @(posedge clk) 
+    reg [19:0] move_counter = 0;
+    
+    always @(posedge CLK25MHZ or posedge rst) 
     begin
-        // Sync button to system clock
-        btn_sync_0 <= BTN;
-        btn_sync_1 <= btn_sync_0;
-    
-        // Debounce counter
-        if (btn_sync_1 == btn_stable) 
+        if (rst) 
         begin
-            debounce_cnt <= 0;
+            px <= 100;
+            py <= 100;
+            dx <= 1;
+            dy <= 1;
+            move_counter <= 0;
         end 
         else 
         begin
-            debounce_cnt <= debounce_cnt + 1;
-            if (debounce_cnt == 16'hFFFF)
-                btn_stable <= btn_sync_1;   // Update stable value
-        end
-    end
-    
-    //Record Button presses
-    reg btn_prev = 0;
-
-    // Outputs
-    reg pressed      = 0;  // HIGH the whole time button is held
-    reg pressed_edge = 0;  // 1 clock pulse when button is first pressed
-    reg released     = 0;  // 1 clock pulse when button is released
-    
-    always @(posedge clk) 
-    begin
-        btn_prev <= btn_stable;
-    
-        pressed      <= btn_stable;
-        pressed_edge <= (btn_stable && !btn_prev);   // rising edge
-        released     <= (!btn_stable && btn_prev);   // falling edge
-    end
-    
-    //
-    //IMPORTANT!!! - Copy and paste new to this if CHANGED LOCAL PARAMS IN VGA Module
-    //
-    //Local params used in VGA
-    localparam BALL_RADIUS = 4;                 // Radius for 8x8 ball
-    // VGA 640-by-480 sync parameters
-    localparam HD = 640;    // horizontal display area
-    localparam VD = 480;    // vertical display area
-    // Backboard
-    localparam BOARD_X_L = 630;
-    localparam BOARD_X_R = 633;
-    localparam BOARD_Y_T = 110;
-    localparam BOARD_Y_B = 160;
-    //Basketball Hoop
-    localparam HOOP_X_L = 610;
-    localparam HOOP_X_R = 630;
-    localparam HOOP_Y_T = 155;
-    localparam HOOP_Y_B = 159;
-    
-    //Handle x and y if signed. Bits 12-15 aren't used in Acceleometer
-    // Signed 12-bit accelerometer values
-    wire signed [11:0] x_val = ax[11:0];
-    wire signed [11:0] y_val = ay[11:0];
-
-    // Absolute value: magnitude only. Scalar
-    wire signed [11:0] mag_x = x_val[11] ? (~x_val + 1'b1) : x_val; //2's complement to convert signed to unsigned if X & Y bit 11 from accel is 1 (Signed).
-    wire signed [11:0] mag_y = y_val[11] ? (~y_val + 1'b1) : y_val;
-    
-    //
-    // Convert raw accelerometer to fixed-point m/s^2 using Q4.12 format
-    //
-    // Q4.12: 4 integer bits, 12 fractional bits
-    // 1 g = 1000 LSB, 9.81 m/s^2 per g
-    // Fixed-point scaling: 2^12 = 4096
-    // Combined constant: raw * 0.00981 * 4096 ≈ raw * 40 => 16'sd40 (Signed Decimal)
-
-    wire signed [15:0] ax_mps2 = mag_x * 16'sd40;
-    wire signed [15:0] ay_mps2 = mag_y * 16'sd40;
-    
-    
-    //Get Velocity and Update position
-    localparam signed [15:0] dt_q = 16'd41;         // dt = 0.01s Q0.12
-    localparam signed [15:0] g_mps2 = 16'sd40139;  // 9.81 m/s^2 in Q4.12
-
-    // Initial positions (Q4.12)
-    //  Scale it down so it fits into 640x480 resolution pixel and when calculating
-    //  init_pos / scale(50) * 4096 (2^12) = ...
-    //px_init_q = 10 / 50 * 4096 = 819
-    //py_init_q = 300 / 50 * 4096 = 24576
-    localparam scale = 50;
-    localparam signed [15:0] px_init = 16'd819;    // 10 px -> Q4.12
-    localparam signed [15:0] py_init = 16'd24576;  // 300 px -> Q4.12
-    
-    reg signed [15:0] vx = 0, vy = 0;                     // Q4.12
-    reg signed [15:0] px = px_init, py = py_init;         // Q4.12
-    
-    
-    // FOR MOMENTUM
-    // Precomputed Q4.12 ball edges
-    // Ball edges in Q4.12
-    reg signed [15:0] ball_l_q;
-    reg signed [15:0] ball_r_q;
-    reg signed [15:0] ball_t_q;
-    reg signed [15:0] ball_b_q;
-    
-    // Backboard coordinates scaled to physics Q4.12
-    localparam signed [15:0] BOARD_X_L_Q = BOARD_X_L * scale <<< 12;
-    localparam signed [15:0] BOARD_X_R_Q = BOARD_X_R * scale <<< 12;
-    localparam signed [15:0] BOARD_Y_T_Q = BOARD_Y_T * scale <<< 12;
-    localparam signed [15:0] BOARD_Y_B_Q = BOARD_Y_B * scale <<< 12;
-    // Hoop Coordinates scaled
-    localparam signed [15:0] HOOP_X_L_Q = HOOP_X_L * scale <<< 12;
-    localparam signed [15:0] HOOP_X_R_Q = HOOP_X_R * scale <<< 12;
-    localparam signed [15:0] HOOP_Y_T_Q = HOOP_Y_T * scale <<< 12;
-    localparam signed [15:0] HOOP_Y_B_Q = HOOP_Y_B * scale <<< 12;
-    // Only bounce on rim edges, otherwise ball falls through
-    localparam signed [15:0] RIM_THICK_Q = 16'd1000; // ~1px in Q4.12, rim thickness for collision
-    //END MOMENTUM
-    
-    // Note: For VGA display, positive Y acceleration its falling. And negative Y acceleration means its rising.
-    // Because Top is 0 for reference adn 480 is bottom
-    // >>> 12 Arithmetic shift right to accomodate 2^12
-    always @(posedge clk or posedge rst) 
-    begin
-    //
-    //Kinematic Equation y = y0 + vy0*t + -g*t^2
-    //
-        if (rst) 
-        begin
-            px <= px_init;
-            py <= py_init;
-            vx <= 16'sd0;
-            vy <= 16'sd0;
-        end else if (!released && pressed) 
-        begin
-            // Not released: optionally sample input for initial velocity
-            // Pressed: Once the button is pressed
-            vx <= (ax_mps2 * dt_q) >>> 12;         // only stores potential initial x velocity
-            vy <= ((ay_mps2 * dt_q) >>> 12);      // only stores potential initial y velocity 
-            px <= px_init;
-            py <= py_init;
-        end 
-        else if (released && !pressed)
-        begin
-            // Released: update position using stored vx, vy
-            px <= px + ((vx * dt_q) >>> 12);
-            vy <= vy + -((g_mps2 * dt_q) >>> 12);   // gravity pulls down
-            py <= py + ((vy * dt_q) >>> 12);
-        end
-        
-        
+            move_counter <= move_counter + 1;
+            
+            // Move every frame (at 25MHz, 25 million cycles per second)
+            if (move_counter == 25000) // Move every ~1ms
+            begin
+                move_counter <= 0;
                 
-        
-    //
-    //Apply Momentum Principles for bouncing back
-    //
-        //In standard Kinematic problem solving. Where 0 is bottom and 480 is Top
-        ball_l_q <= px - (BALL_RADIUS <<< 12);
-        ball_r_q <= px + (BALL_RADIUS <<< 12);
-        ball_b_q <= py - (BALL_RADIUS <<< 12);  // py=0 bottom
-        ball_t_q <= py + (BALL_RADIUS <<< 12);  // py increasing upward
-        
-        //
-        //Screen Resolution Border
-        //
-        // LEFT wall
-        if (ball_l_q <= 0) 
-        begin
-            px <= BALL_RADIUS <<< 12;
-            vx <= -vx;
-        end
-        // RIGHT wall
-        if (ball_r_q >= (HD * scale <<< 12))
-        begin
-            px <= (HD - BALL_RADIUS) <<< 12;
-            vx <= -vx;
-        end
-        // FLOOR
-        if (ball_b_q <= 0) 
-        begin
-            py <= BALL_RADIUS <<< 12;
-            vy <= -(vy >>> 1); // damping
-        end
-        // CEILING
-        if (ball_t_q >= (VD <<< 12)) 
-        begin
-            py <= (VD - BALL_RADIUS) <<< 12;
-            vy <= -vy;
-        end
-        
-        //
-        //Backboard
-        //
-        // Horizontal collision (front/back of board). Wont implement Y bouncing (No need)
-        if ((ball_r_q >= BOARD_X_L_Q) && (ball_l_q <= BOARD_X_R_Q) &&
-            (ball_b_q <= BOARD_Y_B_Q) && (ball_t_q >= BOARD_Y_T_Q)) 
-        begin
-        
-            if (vx > 0) 
-            begin
-                px <= BOARD_X_L_Q - (BALL_RADIUS <<< 12); // hit left side
-            end 
-            else 
-            begin
-                px <= BOARD_X_R_Q + (BALL_RADIUS <<< 12); // hit right side
+                // Move in current direction
+                if (dx) px <= px + 1;
+                else px <= px - 1;
+                
+                if (dy) py <= py + 1;
+                else py <= py - 1;
+                
+                // Bounce off walls
+                if (px >= 635) dx <= 0;
+                if (px <= 5) dx <= 1;
+                if (py >= 475) dy <= 0;
+                if (py <= 5) dy <= 1;
             end
-            vx <= -vx; // reverse X
         end
-        
-        //
-        // HOOP / NET COLLISION
-        //
-        // Left rim
-        if ((ball_r_q >= HOOP_X_L_Q) && (ball_l_q < (HOOP_X_L_Q + RIM_THICK_Q)) &&
-            (ball_t_q <= HOOP_Y_B_Q) && (ball_b_q >= HOOP_Y_T_Q))
-        begin
-            px <= HOOP_X_L_Q - (BALL_RADIUS <<< 12); // bounce left
-            vx <= -vx;
-        end
-    
-        // Right rim
-        if ((ball_l_q <= HOOP_X_R_Q) && (ball_r_q > (HOOP_X_R_Q - RIM_THICK_Q)) &&
-            (ball_t_q <= HOOP_Y_B_Q) && (ball_b_q >= HOOP_Y_T_Q))
-        begin
-            px <= HOOP_X_R_Q + (BALL_RADIUS <<< 12); // bounce right
-            vx <= -vx;
-        end
-    
-        // Top rim (optional tiny bounce if hitting very edge)
-        if ((ball_b_q <= (HOOP_Y_T_Q + RIM_THICK_Q)) && (ball_t_q > HOOP_Y_T_Q) &&
-            (ball_l_q < HOOP_X_L_Q || ball_r_q > HOOP_X_R_Q))
-        begin
-            vy <= -(vy >>> 1); // small bounce
-        end
-    
-        // Inside the net: no collision at all
     end
     
-                    
-                    
-    //
-    // Convert and Map position to VGA (640x480) - This takes care of Top and Bottom problem for VGA in Y
-    //
-    wire signed [31:0] px_pix = (px >>> 12) * scale;
-    wire signed [31:0] py_pix = VD - ((py >>> 12) * scale); // flip for VGA
-
-    assign ball_x = (px_pix < 0)      ? 10'd0 :
-                    (px_pix > 639)    ? 10'd639 :
-                    px_pix[9:0];
-
-    assign ball_y = (py_pix < 0)      ? 10'd0 :
-                    (py_pix > 479)    ? 10'd479 :
-                    py_pix[9:0];
-
+    assign ball_x = px;
+    assign ball_y = py;
+    
 endmodule
-
 
 
 
