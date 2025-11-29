@@ -25,7 +25,7 @@ module sevenseg_mux(
   input  wire rst,
   input  wire scan_en,              // ~4 kHz scan pulse
   input  wire [3:0] d3, d2, d1, d0, // digit data
-  output reg  [3:0] an,             // digit enables (active-low)
+  output reg  [7:0] an,             // digit enables (active-low)
   output wire [6:0] seg             // segment lines (active-low)
 );
 
@@ -64,13 +64,16 @@ assign seg = enc(nib);
   end
 
   always @* begin
+    // Default: all digits OFF (active-low '1')
+    an = 8'b1111_1111;
     if (sel == 0) begin
-      an = 4'b1110;  // enable digit 0 (ones), disable all others
-      nib = d0;
+      an[0] = 1'b0;           // enable digit 0 (ones)
+      nib  = d0;
     end else begin
-      an = 4'b1101;  // enable digit 1 (tens), disable all others
-      nib = d1;
+      an[1] = 1'b0;           // enable digit 1 (tens)
+      nib  = d1;
     end
+    // an[2]..an[7] remain 1 (OFF)
   end
 
 endmodule

@@ -24,7 +24,7 @@ module shotclock_top(
   input  wire CLK100MHZ,   // 100 MHz system clock
   input  wire BTNC,        // start/load countdown
   input  wire BTNR,        // reset button
-  output wire [3:0] an,    // anode controls
+  output wire [7:0] an,    // anode controls
   output wire [6:0] seg    // segment outputs
 );
 

@@ -31,7 +31,7 @@ module sevenseg_tb();
   reg [3:0] d1, d0;
 
   // outputs
-  wire [3:0] an;
+  wire [7:0] an;
   wire [6:0] seg;
 
   // instantiate unit under test
@@ -57,7 +57,8 @@ module sevenseg_tb();
   end
 
   initial begin
-    // Waveform-only testbench for seven-segment display verification
+    integer i;
+
     // Initialize with display showing "10"
     d1 = 4'd1;
     d0 = 4'd0;
@@ -66,15 +67,14 @@ module sevenseg_tb();
     #50;
     rst = 0;
 
-    // Quick countdown sequence
-    #200;  d1=4'd0; d0=4'd9;  // 09
-    #200;  d0=4'd5;           // 05
-    #200;  d0=4'd3;           // 03
-    #200;  d0=4'd0;           // 00
+    // Countdown 9 -> 0, 80ns per step (total ~50 + 80*11 + 70 = 1000ns)
+    for (i = 9; i >= 0; i = i - 1) begin
+      #80;
+      d1 = i / 10;      // tens
+      d0 = i % 10;      // ones
+    end
 
-    // Observe multiplexing with final value
-    #150;
-    
+    #70;
     $finish;
   end
 
