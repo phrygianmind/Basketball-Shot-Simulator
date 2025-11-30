@@ -35,7 +35,7 @@ module Basketball_Shot(
     output wire        ACL_SCLK,
     output wire        ACL_CSN,
     input wire         DP,
-    input wire [14:0]  LED,
+    output wire [14:0]  LED,
     
     //Seven Seg LED
     input  wire BTNR,        // reset button
@@ -48,19 +48,19 @@ module Basketball_Shot(
     //-------------
     // Wires used
     wire [15:0] x_out, y_out;
-    //wire [14:0] LED;
+    wire [14:0] LEDhold;
     //wire [6:0]  SEG;
     //wire        DP;
     //wire [7:0]  AN;
     top_accel accelerometer 
     (
         .CLK100MHZ(CLK100MHZ), 
-        .BTN_FREEZE(1'b0), 
+        .BTN_FREEZE(BTNC), 
         .ACL_MISO(ACL_MISO), 
         .ACL_MOSI(ACL_MOSI), 
         .ACL_SCLK(ACL_SCLK), 
         .ACL_CSN(ACL_CSN),
-        .LED(LED),
+        .LED(LEDhold),
         .SEG(SEG),
         .DP(DP),
         .AN(AN),
@@ -82,7 +82,8 @@ module Basketball_Shot(
         .ax(x_out),
         .ay(y_out),
         .ball_x(ball_x),
-        .ball_y(ball_y)
+        .ball_y(ball_y),
+        .LED(LED[3:0])
     );
     
     
@@ -110,8 +111,8 @@ module Basketball_Shot(
 //        .CLK100MHZ(CLK100MHZ), 
 //        .BTNC(BTNC),
 //        .BTNR(BTNR),
-//        .an(an),
-//        .seg(seg)
+//        .an(AN),
+//        .seg(SEG)
 //    );
     
     
