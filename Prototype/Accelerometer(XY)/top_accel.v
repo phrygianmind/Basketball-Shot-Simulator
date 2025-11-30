@@ -16,7 +16,9 @@ module top_accel(
     output wire [14:0] LED,
     output wire [6:0]  SEG,
     output wire        DP,
-    output wire [7:0]  AN
+    output wire [7:0]  AN,
+    output wire [15:0] x_out,
+    output wire [15:0] y_out
 );
 
   wire        w_4MHz;
@@ -26,7 +28,8 @@ module top_accel(
   wire        x_valid; 
   wire [15:0] y_raw;
   wire        y_valid;
-
+  assign x_out = x_raw;
+  assign y_out = y_raw;
   // filtered flick magnitudes
   wire [15:0] x_flick;
   wire [15:0] y_flick;
