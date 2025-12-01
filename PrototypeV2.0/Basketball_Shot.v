@@ -30,7 +30,7 @@ module Basketball_Shot(
     output wire        VGA_VS,
     
     // Accelerometer (ADXL362 SPI)
-    input  wire        BTNC,      // reuse as "shoot" / freeze button, etc.
+    input  wire        BTNC,      // shoot button
     input  wire        ACL_MISO,
     output wire        ACL_MOSI,
     output wire        ACL_SCLK,
@@ -45,66 +45,69 @@ module Basketball_Shot(
     //-------------
     // Accelerometer
     //-------------
-    // Wires used
-    wire [15:0] x_out, y_out;
-    wire [14:0] accel_led_unused;  // internal-only LED bus from accel (not used on board)
+    wire [15:0] x_raw,   y_raw;     // signed raw from SPI
+    wire [15:0] x_flick, y_flick;   // filtered flick magnitudes
+    wire [14:0] accel_led_unused;   // not used on board
 
     top_accel accelerometer (
-        .CLK100MHZ (CLK100MHZ), 
-        .BTN_FREEZE(BTNC), 
-        .ACL_MISO  (ACL_MISO), 
-        .ACL_MOSI  (ACL_MOSI), 
-        .ACL_SCLK  (ACL_SCLK), 
-        .ACL_CSN   (ACL_CSN),
-        .LED       (accel_led_unused),
-        .x_out     (x_out),
-        .y_out     (y_out)
+        .CLK100MHZ   (CLK100MHZ), 
+        .BTN_FREEZE  (1'b0),          // freeze for debug; keep filter live for main
+        .ACL_MISO    (ACL_MISO), 
+        .ACL_MOSI    (ACL_MOSI), 
+        .ACL_SCLK    (ACL_SCLK), 
+        .ACL_CSN     (ACL_CSN),
+        .LED         (accel_led_unused),
+
+        .x_raw_out   (x_raw),
+        .y_raw_out   (y_raw),
+        .x_flick_out (x_flick),
+        .y_flick_out (y_flick)
     );
+
+    //-------------
+    // Shot clock (7-seg)
+    //-------------
+    wire shot_zero;
+
+    shotclock_top shotClock (
+        .CLK100MHZ (CLK100MHZ), 
+        .BTNC      (1'b0),
+        .BTNR      (BTNR),
+        .an        (AN),
+        .seg       (SEG),
+        .zero      (shot_zero)
+    );
+
+    // combined reset for kinematic: manual reset OR timer expired
+    wire kin_rst = BTNR | shot_zero;
 
     //-------------
     // Kinematic Calc
     //-------------
-    // Wires Used
     wire [9:0] ball_x, ball_y;
-    wire kin_rst = BTNR | shot_zero;
-
+   
     kinematic projectileMotion (
-        .clk    (CLK100MHZ),
-        .rst    (kin_rst),      
-        .BTN    (BTNC),
-        .ax     (x_out),
-        .ay     (y_out),
-        .ball_x (ball_x),
-        .ball_y (ball_y)
+        .clk      (CLK100MHZ),
+        .rst      (kin_rst),      
+        .BTN      (BTNC),
+        .ax_raw   (x_raw),
+        .ay_raw   (y_raw),
+        .ax_flick (x_flick),
+        .ay_flick (y_flick),
+        .ball_x   (ball_x),
+        .ball_y   (ball_y)
     );
-    
     
     //-------------
     // VGA
     //-------------
     VGA vga (
-        .CLK100MHZ(CLK100MHZ), 
-        .ball_x   (ball_x),
-        .ball_y   (ball_y),
-        .rgb      (rgb), 
-        .VGA_HS   (VGA_HS),
-        .VGA_VS   (VGA_VS)
-    );
-    
-    
-    //-------------
-    // Shot clock (7-seg)
-    //-------------
-    // Wires Used
-    wire shot_zero;
-    
-    shotclock_top shotClock (
-        .CLK100MHZ(CLK100MHZ), 
-        .BTNC     (1'b0),
-        .BTNR     (BTNR),
-        .an       (AN),
-        .seg      (SEG),
-        .zero     (shot_zero)
+        .CLK100MHZ (CLK100MHZ), 
+        .ball_x    (ball_x),
+        .ball_y    (ball_y),
+        .rgb       (rgb), 
+        .VGA_HS    (VGA_HS),
+        .VGA_VS    (VGA_VS)
     );
     
 endmodule
