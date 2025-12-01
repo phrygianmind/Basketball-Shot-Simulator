@@ -13,10 +13,15 @@ module top_accel(
     output wire        ACL_SCLK,
     output wire        ACL_CSN,
     output wire [14:0] LED,
-    output wire [15:0] x_out,
-    output wire [15:0] y_out
-);
 
+    // signed raw accel (from SPI)
+    output wire [15:0] x_raw_out,
+    output wire [15:0] y_raw_out,
+
+    // filtered flick magnitudes (tilt removed, optional freeze)
+    output wire [15:0] x_flick_out,
+    output wire [15:0] y_flick_out
+);
 
   wire        w_4MHz;
 
@@ -86,12 +91,13 @@ module top_accel(
     end
   end
   
-  
   assign x_disp = btn_db ? x_freeze : x_flick;
   assign y_disp = btn_db ? y_freeze : y_flick;
 
   // drive module outputs
-  assign x_out = x_disp; 
-  assign y_out = y_disp;
+  assign x_raw_out   = x_raw;
+  assign y_raw_out   = y_raw;
+  assign x_flick_out = x_disp;
+  assign y_flick_out = y_disp;
 
 endmodule
