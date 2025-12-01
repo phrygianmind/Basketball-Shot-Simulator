@@ -19,14 +19,13 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-module kinematic
-(
+module kinematic (
     input  wire        clk,
     input  wire        rst,
     input  wire        BTN,
-    input  wire [15:0] ax, ay,
-    output wire [9:0]  ball_x, ball_y,
-    output wire [3:0]  LED
+    input  wire [15:0] ax_raw, ay_raw,     // signed raw
+    input  wire [15:0] ax_flick, ay_flick, // unsigned magnitude
+    output wire [9:0]  ball_x, ball_y
 );
 
     // 60 Hz physics clock
@@ -90,12 +89,9 @@ module kinematic
 
     reg [3:0] STATE = START;
     
-    reg [3:0] LEDhold = 4'b0000;
-    assign LED = LEDhold;
-    
     // position and velocity
-    localparam [9:0] px_init = 50;
-    localparam [9:0] py_init = 50;
+    localparam [9:0] px_init = 150;
+    localparam [9:0] py_init = 80;
     
     reg [9:0] px = px_init, py = py_init;
     reg signed [15:0] vx = 0, vy = 0;
@@ -103,16 +99,14 @@ module kinematic
     // physics parameters
     localparam GRAVITY           = 4;
     localparam ACCEL_SENSITIVITY = 4;
-    localparam VELOCITY_SCALE    = 5;
+    localparam VELOCITY_SCALE    = 4;
     
-    // signed 12-bit values and magnitudes
-    wire signed [11:0] x_signed = ax[11:0];
-    wire signed [11:0] y_signed = ay[11:0];
-    wire neg_x = x_signed[11];
-    wire neg_y = y_signed[11];
-    wire [11:0] mag_x = neg_x ? (~x_signed + 12'd1) : x_signed;
-    wire [11:0] mag_y = neg_y ? (~y_signed + 12'd1) : y_signed;
-    
+    wire signed [11:0] x_signed = ax_raw[11:0];      // keeps direction
+    wire signed [11:0] y_signed = ay_raw[11:0];
+
+    wire [11:0] mag_x = ax_flick[11:0];              // magnitude only
+    wire [11:0] mag_y = ay_flick[11:0];
+
     // FSM
     always @(posedge physics_clk) begin 
         if (rst) begin
@@ -121,7 +115,6 @@ module kinematic
             vx      <= 0; 
             vy      <= 0;
             STATE   <= START;
-            LEDhold <= 4'b0000;
         end
         else begin
             case (STATE)
@@ -130,11 +123,9 @@ module kinematic
                     py      <= py_init;
                     vx      <= 0; 
                     vy      <= 0;
-                    LEDhold <= 4'b0001;
                     
                     if (pressed_edge) begin
-                        STATE   <= PRESSED;
-                        LEDhold <= 4'b0010;
+                        STATE <= PRESSED;
                     end
                     else begin
                         STATE <= START;
@@ -142,83 +133,99 @@ module kinematic
                 end
                 
                 PRESSED: begin
-                    LEDhold <= 4'b0010;
-                    
                     if (released_edge) begin
-                        STATE   <= RELEASED;
-                        LEDhold <= 4'b0100;
+                        STATE <= RELEASED;
                     end
                     else begin
-                        vx    <= vx + (mag_x >>> ACCEL_SENSITIVITY);
-                        vy    <= vy + (mag_y >>> ACCEL_SENSITIVITY + 1); 
+                        // X: use sign of raw, magnitude from flick
+                        if (x_signed[11])
+                            vx <= vx + (mag_x >>> ACCEL_SENSITIVITY);
+                        else
+                            vx <= vx - (mag_x >>> ACCEL_SENSITIVITY);
+
+                        // Y: smaller vertical increment (note +1 shift)
+                        if (y_signed[11])
+                            vy <= vy - (mag_y >>> (ACCEL_SENSITIVITY + 1));
+                        else
+                            vy <= vy + (mag_y >>> (ACCEL_SENSITIVITY + 1));
+
                         STATE <= PRESSED;
                     end
                 end
+
+            RELEASED: begin
+                // update position
+                px <= px + (vx >>> VELOCITY_SCALE);
+                py <= py + (vy >>> VELOCITY_SCALE);
                 
-                RELEASED: begin
-                    // update position
-                    px <= px + (vx >>> VELOCITY_SCALE);
-                    py <= py + (vy >>> VELOCITY_SCALE);
-                    
-                    // gravity (vy < 0 means falling in this coordinate system)
-                    vy <= vy - GRAVITY;
+                // gravity
+                vy <= vy - GRAVITY;
 
-                    // backboard collision (vertical plane)
-                    if ((vx > 0) &&
-                        (px + BALL_RADIUS >= BOARD_X_L) &&
-                        (px + BALL_RADIUS <= BOARD_X_R + 2) &&
-                        (py >= BOARD_PY_MIN) &&
-                        (py <= BOARD_PY_MAX)) begin
-                        vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
-                        px <= BOARD_X_L - BALL_RADIUS - 1;
-                    end
-
-                    // rim left edge collision
-                    if ((vx > 0) &&
-                        (px + BALL_RADIUS >= HOOP_X_L) &&
-                        (px + BALL_RADIUS <= HOOP_X_L + RIM_EDGE_WIDTH) &&
-                        (py >= HOOP_PY_MIN) &&
-                        (py <= HOOP_PY_MAX)) begin
-                        vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
-                        px <= HOOP_X_L - BALL_RADIUS - 1;
-                    end
-
-                    // rim right edge collision
-                    if ((vx < 0) &&
-                        (px - BALL_RADIUS <= HOOP_X_R) &&
-                        (px - BALL_RADIUS >= HOOP_X_R - RIM_EDGE_WIDTH) &&
-                        (py >= HOOP_PY_MIN) &&
-                        (py <= HOOP_PY_MAX)) begin
-                        vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
-                        px <= HOOP_X_R + BALL_RADIUS + 1;
-                    end
-
-                    // rim top collision (thin horizontal band; center open)
-                    if ((vy < 0) &&
-                        ((py - BALL_RADIUS) <= (RIM_TOP_PY + RIM_THICKNESS/2)) &&
-                        ((py - BALL_RADIUS) >= (RIM_TOP_PY - RIM_THICKNESS/2)) &&
-                        (px >= (HOOP_X_L + RIM_EDGE_WIDTH)) &&
-                        (px <= (HOOP_X_R - RIM_EDGE_WIDTH))) begin
-                        vy <= -((vy * BOUNCE_NUM) >>> BOUNCE_SHIFT);
-                        py <= RIM_TOP_PY + BALL_RADIUS + 1;
-                    end
-
-                    // default in-play state
-                    LEDhold <= 4'b0100;
-                    STATE   <= RELEASED;
-                    
-                    // floor collision at bottom of screen (priority)
-                    if ((vy < 0) && (py <= BALL_RADIUS + 1)) begin
-                        vy <= -((vy * BOUNCE_NUM) >>> BOUNCE_SHIFT);
-                        py <= BALL_RADIUS + 1;
-                    end
-                    // only if NOT a floor hit this tick, allow reset
-                    else if (px > HD || py > VD) begin
-                        STATE   <= DONE;
-                        LEDhold <= 4'b1000;
-                    end
-                    
+                // backboard collision (vertical plane)
+                if ((vx > 0) &&
+                    (px + BALL_RADIUS >= BOARD_X_L) &&
+                    (px + BALL_RADIUS <= BOARD_X_R + 2) &&
+                    (py >= BOARD_PY_MIN) &&
+                    (py <= BOARD_PY_MAX)) begin
+                    vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    px <= BOARD_X_L - BALL_RADIUS - 1;
                 end
+
+                // rim left edge side collision
+                if ((vx > 0) &&
+                    (px + BALL_RADIUS >= HOOP_X_L) &&
+                    (px + BALL_RADIUS <= HOOP_X_L + RIM_EDGE_WIDTH) &&
+                    (py >= HOOP_PY_MIN) &&
+                    (py <= HOOP_PY_MAX)) begin
+                    vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    px <= HOOP_X_L - BALL_RADIUS - 1;
+                end
+
+                // rim right edge side collision
+                if ((vx < 0) &&
+                    (px - BALL_RADIUS <= HOOP_X_R) &&
+                    (px - BALL_RADIUS >= HOOP_X_R - RIM_EDGE_WIDTH) &&
+                    (py >= HOOP_PY_MIN) &&
+                    (py <= HOOP_PY_MAX)) begin
+                    vx <= -((vx * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    px <= HOOP_X_R + BALL_RADIUS + 1;
+                end
+
+                // rim left top "cap" (tiny thickness above left edge)
+                if ((vy < 0) &&
+                    ((py - BALL_RADIUS) <= (RIM_TOP_PY + 4)) &&
+                    ((py - BALL_RADIUS) >= (RIM_TOP_PY - 1)) &&
+                    (px + BALL_RADIUS >= HOOP_X_L) &&
+                    (px + BALL_RADIUS <= HOOP_X_L + RIM_EDGE_WIDTH)) begin
+                    vy <= -((vy * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    py <= RIM_TOP_PY + BALL_RADIUS + 1;
+                end
+
+                // rim right top "cap" (tiny thickness above right edge)
+                if ((vy < 0) &&
+                    ((py - BALL_RADIUS) <= (RIM_TOP_PY + RIM_THICKNESS/2)) &&
+                    ((py - BALL_RADIUS) >= (RIM_TOP_PY - RIM_THICKNESS/2)) &&
+                    (px - BALL_RADIUS <= HOOP_X_R) &&
+                    (px - BALL_RADIUS >= HOOP_X_R - RIM_EDGE_WIDTH)) begin
+                    vy <= -((vy * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    py <= RIM_TOP_PY + BALL_RADIUS + 1;
+                end
+
+                // default in-play state
+                STATE <= RELEASED;
+                
+                // Check if NEXT position will be out of bounds (not in floor zone)
+                if (px > HD + BALL_RADIUS || py > VD + BALL_RADIUS) begin
+                        STATE <= DONE;
+                    end
+                    
+                // ground collision    
+               else if ((vy < 0) && (py <= BALL_RADIUS + 3)) begin
+                    vy <= -((vy * BOUNCE_NUM) >>> BOUNCE_SHIFT);
+                    py <= BALL_RADIUS + 1;
+                end
+            end
+
 
                 DONE: begin
                     px      <= px_init; 
@@ -226,12 +233,10 @@ module kinematic
                     vx      <= 0; 
                     vy      <= 0;
                     STATE   <= START;
-                    LEDhold <= 4'b0001;
                 end
         
                 default: begin
-                    STATE   <= START;
-                    LEDhold <= 4'b1111;
+                    STATE <= START;
                 end
             endcase
         end
