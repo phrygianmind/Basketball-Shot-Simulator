@@ -1,14 +1,14 @@
 `timescale 1ns/1ps
 // spi_master_tb - self-checking with behavioral ADXL362 slave 
 // Author(s): Benjamin Thai
-// simulates spi communication with ADXL362 behavioral slave by using random X/Y data
+// Simulates SPI communication with ADXL362 behavioral slave using random X/Y data
 
 module spi_master_tb;
 
   // clock
   reg iclk = 1'b0;
-  localparam integer MAIN_CLK_PERIOD = 10; // 100 MHz
-  always #(MAIN_CLK_PERIOD/2) iclk = ~iclk;
+  localparam real MAIN_CLK_PERIOD = 0.01; 
+  always #(MAIN_CLK_PERIOD/2.0) iclk = ~iclk;
 
   // UUT I/O
   wire        sclk, mosi, cs;
@@ -33,7 +33,6 @@ module spi_master_tb;
     .y_valid (y_valid)
   );
 
-  // deterministic vectors
   localparam integer FRAMES = 16;
   reg [7:0] xL_vec [0:FRAMES-1];
   reg [7:0] xH_vec [0:FRAMES-1];
@@ -56,7 +55,7 @@ module spi_master_tb;
   assign miso = sh_out[7];
 
   // edge tracking
-  reg sclk_d=0, cs_d=1;
+  reg sclk_d = 0, cs_d = 1;
   always @(posedge iclk) begin
     sclk_d <= sclk;
     cs_d   <= cs;
@@ -64,7 +63,7 @@ module spi_master_tb;
   wire sclk_rise = (sclk_d==1'b0) && (sclk==1'b1);
   wire sclk_fall = (sclk_d==1'b1) && (sclk==1'b0);
 
-  // command/address counting (rising edges)
+  // command/address counting 
   reg  [2:0] rise_ix    = 3'd0;  // 0..7 within a byte
   integer    bytes_seen = 0;     // 0,1,2 for cmd/addr bytes completed
 
@@ -74,7 +73,7 @@ module spi_master_tb;
   reg  [2:0] fall_ix    = 3'd7;  // 7..0 within a payload byte
   integer    vec_ix     = 0;     // frame index
 
-  // arm flag - start streaming on the first sclk falling edge
+  // start streaming on the first sclk falling edge
   reg        arm_stream = 1'b0;
 
   function [7:0] cur_byte;
@@ -97,13 +96,12 @@ module spi_master_tb;
         if (rise_ix != 3'd7) begin
           rise_ix <= rise_ix + 3'd1;
         end else begin
-          rise_ix <= 3'd0; // byte completed under CS low
+          rise_ix <= 3'd0;
           if (bytes_seen == 0) begin
             bytes_seen <= 1;       // first byte (READ) done
           end else if (bytes_seen == 1) begin
-            // second byte (ADDR) done -> arm streaming; load on next falling
-            bytes_seen <= 2;
-            arm_stream <= 1'b1;
+            bytes_seen <= 2;       // second byte (ADDR) done
+            arm_stream <= 1'b1;    // load on next falling edge
           end
         end
       end
@@ -112,7 +110,7 @@ module spi_master_tb;
       rise_ix    <= 3'd0;
       bytes_seen <= 0;
       streaming  <= 1'b0;
-      arm_stream <= 1'b0; // ensure we don't accidentally start on a stale arm
+      arm_stream <= 1'b0;
     end
   end
 
@@ -121,12 +119,11 @@ module spi_master_tb;
     if (cs==1'b0) begin
       if (sclk_fall) begin
         if (arm_stream) begin
-          // 1st negedge after ADDR: present X_L[7] and start streaming
           arm_stream <= 1'b0;
           streaming  <= 1'b1;
           data_ix    <= 2'd0;
           fall_ix    <= 3'd7;
-          sh_out     <= cur_byte(2'd0, vec_ix); // X_L MSB stable for next rising
+          sh_out     <= cur_byte(2'd0, vec_ix); // first payload byte
         end else if (streaming) begin
           if (fall_ix != 3'd0) begin
             sh_out  <= {sh_out[6:0], 1'b0};
@@ -135,9 +132,8 @@ module spi_master_tb;
             if (data_ix != 2'd3) begin
               data_ix <= data_ix + 2'd1;
               fall_ix <= 3'd7;
-              sh_out  <= cur_byte(data_ix + 1, vec_ix); // next payload byte
+              sh_out  <= cur_byte(data_ix + 1, vec_ix);
             end else begin
-              // finished Y_H; end of frame
               streaming <= 1'b0;
               vec_ix    <= (vec_ix + 1) % FRAMES;
             end
@@ -148,30 +144,38 @@ module spi_master_tb;
   end
 
   // self-checking 
-  integer pass=0, fail=0, seen=0, expect_ix=0;
+  integer pass = 0, fail = 0, seen = 0, expect_ix = 0;
+
+  // expected-value signals for waveform viewing
+  reg [15:0] exp_x = 16'd0;
+  reg [15:0] exp_y = 16'd0;
 
   always @(posedge iclk) begin
     if (x_valid) begin
-      if (x_raw == {xH_vec[expect_ix], xL_vec[expect_ix]}) begin
+      exp_x = {xH_vec[expect_ix], xL_vec[expect_ix]};
+      if (x_raw == exp_x) begin
         $display("X PASS vec=%0d exp=%h got=%h",
-                 expect_ix, {xH_vec[expect_ix], xL_vec[expect_ix]}, x_raw);
+                 expect_ix, exp_x, x_raw);
         pass = pass + 1;
       end else begin
         $display("X FAIL vec=%0d exp=%h got=%h",
-                 expect_ix, {xH_vec[expect_ix], xL_vec[expect_ix]}, x_raw);
+                 expect_ix, exp_x, x_raw);
         fail = fail + 1;
       end
     end
+
     if (y_valid) begin
-      if (y_raw == {yH_vec[expect_ix], yL_vec[expect_ix]}) begin
+      exp_y = {yH_vec[expect_ix], yL_vec[expect_ix]};
+      if (y_raw == exp_y) begin
         $display("Y PASS vec=%0d exp=%h got=%h",
-                 expect_ix, {yH_vec[expect_ix], yL_vec[expect_ix]}, y_raw);
+                 expect_ix, exp_y, y_raw);
         pass = pass + 1;
       end else begin
         $display("Y FAIL vec=%0d exp=%h got=%h",
-                 expect_ix, {yH_vec[expect_ix], yL_vec[expect_ix]}, y_raw);
+                 expect_ix, exp_y, y_raw);
         fail = fail + 1;
       end
+
       expect_ix = (expect_ix + 1) % FRAMES;
       seen = seen + 1;
       if (seen == FRAMES) begin
