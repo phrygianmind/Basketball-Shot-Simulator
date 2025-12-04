@@ -31,7 +31,7 @@ module sevenseg_tb();
   reg [3:0] d3, d2, d1, d0;
 
   // outputs
-  wire [3:0] an;
+  wire [7:0] an;
   wire [6:0] seg;
 
   integer errors = 0;
