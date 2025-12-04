@@ -3,7 +3,6 @@
 // Author(s): Benjamin T
 // combines design modules for accelerometer
 
-// top_accel 
 module top_accel(
     input  wire        CLK100MHZ,
     input  wire        BTN_FREEZE,   
@@ -20,17 +19,20 @@ module top_accel(
   wire        w_4MHz;
   wire [15:0] x_raw;
   wire        x_valid; 
-  wire btn_db;
+  wire        btn_db;
+  wire [15:0] x_disp;
 
-// module instantiation
+  // shot flick magnitude 
+  wire [15:0] flick_mag;
+  
 
-  // clock divider module
+  // clock divider
   iclk_genr u_clk (
     .CLK100MHZ (CLK100MHZ),
     .clk_4MHz  (w_4MHz)
   );
 
-  // SPI to ADXL362 module
+  // SPI to ADXL362 (X-only)
   spi_master u_spi (
     .iclk     (w_4MHz),
     .miso     (ACL_MISO),
@@ -41,16 +43,23 @@ module top_accel(
     .x_valid  (x_valid)
   );
 
-// button module
-  debounce_btn u_db (
+  // filter x for shot motion
+shot_filter u_flick (
+  .clk(w_4MHz), 
+  .rst(1'b0), 
+  .x_valid(x_valid), 
+  .x_raw(x_raw), 
+  .flick(flick_mag)
+);
+
+  // button debounce (freeze)
+  btn_sync u_db (
     .clk    (CLK100MHZ),
     .btn_in (BTN_FREEZE),
     .btn_db (btn_db)
   );
 
-
-
-  // 7-seg debug shows either live or frozen
+  // 7-seg debug shows either live or frozen (now using flick)
   seg7_xraw u_seg (
     .CLK100MHZ (CLK100MHZ),
     .x_raw     (x_disp),
@@ -59,18 +68,18 @@ module top_accel(
     .an        (AN)
   );
 
+  // edge detect for freeze button
   reg btn_db_d;
   always @(posedge CLK100MHZ) btn_db_d <= btn_db;
   wire btn_rise = btn_db & ~btn_db_d;  // single-cycle on press
 
-  // freeze sample and display mux 
+  // freeze sample and display mux (freeze the flick value)
   reg [15:0] x_freeze;
   always @(posedge CLK100MHZ) begin
-    // capture the value at the moment the button is pressed
-    if (btn_rise) x_freeze <= x_raw;       
+    if (btn_rise) x_freeze <= flick_mag;
   end
 
-  wire [15:0] x_disp = btn_db ? x_freeze : x_raw;
+  assign x_disp = btn_db ? x_freeze : flick_mag;
 
   // LEDs mirror display value (also freeze)
   assign LED[14:10] = x_disp[14:10];
@@ -78,6 +87,3 @@ module top_accel(
   assign LED[4:0]   = x_disp[4:0];
 
 endmodule
-
-
-
